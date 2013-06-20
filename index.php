@@ -43,16 +43,44 @@ $db = \G::createDataSource(
 
 $app->g = \G::instance();
 
+$app->add(new \Slim\Middleware\ContentTypes);
+$app->add(new \Middleware\Accept);
+
 $app->get('/employee', function() use($app) {
 	$employees = $app->g->findAll('Employee', $app->g->criteria()->limit(0,100));
-
-	$app->response()->body($employees->hal());	
+	
+	$app->response()->hal = $employees->hal();
 });
 
 $app->get('/employee/:id', function($id) use($app) {
 	$employee = $app->g->find('Employee', $id);
 
-	$app->response()->body($employee->hal());	
+	$app->response()->hal = $employee->hal();
 });
 
+$app->post('/employee', function() use($app) {
+	$data = $app->request()->getBody();
+
+	$employee = new \Model\Employee('\Mapper\Employee');
+		
+	$employee->setData($data);
+
+	if($employee->save()) {
+		$app->response()->status(201);
+		$app->response()->hal = $employee->hal();
+	} else {
+		$app->response()->status(500);
+		$app->response()->hal = new \Hal\Resource('/error', ['errors' => $employee->errors]);
+	}
+});
+
+$app->delete('/employee/:id', function($id) use($app) {
+	$employee = $app->g->find('Employee', $id);
+
+	if($employee->delete()) {
+		$app->response()->status(200);
+	} else {
+		$app->response()->status(500);
+	}
+});
 $app->run();
