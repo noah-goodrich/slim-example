@@ -46,21 +46,33 @@ $app->g = \G::instance();
 $app->add(new \Slim\Middleware\ContentTypes);
 $app->add(new \Middleware\Accept);
 
+$app->options('/', function() use($app) {
+	$app->response()->body('success');
+});
+
+$app->get('/', function() use($app) {
+	$app->response()->body('hello');
+});
+
 $app->get('/employee', function() use($app) {
 	$employees = $app->g->findAll('Employee', $app->g->criteria()->limit(0,100));
 	
-	$app->response()->hal = $employees->hal();
+	$hal = $employees->hal();
+	$link = new \Hal\Link('/employee/{id}', 'employee', null, null, null, true);
+	$hal->setLink($link);	
+	
+	$app->response()->hal = $hal;
 });
 
 $app->get('/employee/:id', function($id) use($app) {
 	$employee = $app->g->find('Employee', $id);
-
+	
 	$app->response()->hal = $employee->hal();
 });
 
 $app->post('/employee', function() use($app) {
 	$data = $app->request()->getBody();
-
+	
 	$employee = new \Model\Employee('\Mapper\Employee');
 		
 	$employee->setData($data);
